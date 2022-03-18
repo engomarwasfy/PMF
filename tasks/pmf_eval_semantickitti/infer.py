@@ -45,8 +45,7 @@ class Inference(object):
                 has_image=True
             )
         else:
-            raise ValueError(
-                "invalid dataset: {}".format(self.settings.dataset))
+            raise ValueError(f"invalid dataset: {self.settings.dataset}")
 
         val_perspective_loader = pc_processor.dataset.PerspectiveViewLoader(
             dataset=valset,

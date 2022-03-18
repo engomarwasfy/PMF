@@ -13,22 +13,16 @@ from nuscenes.eval.lidarseg.evaluate import LidarSegEval
 class Experiment(object):
     def __init__(self, settings: Option):
         self.settings = settings
-        if self.settings.has_label:
-            version = "v1.0-trainval"
-        else:
-            version = "v1.0-test"
+        version = "v1.0-trainval" if self.settings.has_label else "v1.0-test"
         self.nusc = NuScenes(
             version=version, dataroot=self.settings.data_root, verbose=False)
         
 
     def run(self):
-        if self.settings.has_label: 
-            eval_set = "val"
-        else:
-            eval_set = "test"
+        eval_set = "val" if self.settings.has_label else "test"
         validate_submission(self.nusc, eval_set=eval_set, verbose=True,
             results_folder=os.path.join(self.settings.save_path, "preds"), zip_out=self.settings.save_path)
-        
+
         if self.settings.has_label:
             eval = LidarSegEval(self.nusc, eval_set=eval_set, verbose=True,
                 results_folder=os.path.join(self.settings.save_path, "preds"))

@@ -18,10 +18,7 @@ class SmoothnessLoss(nn.Module):
         weight = torch.FloatTensor(self.kernel).to(x.device).unsqueeze(0).unsqueeze(0)
         weight = weight.expand(x.size(1), 1, self.kernel_size,  self.kernel_size)
         div_map = F.conv2d(x, weight, groups=x.size(1), padding=1)
-        if self.size_average:
-            return div_map.abs().mean()
-        else:
-            return div_map
+        return div_map.abs().mean() if self.size_average else div_map
 
 class GradGuideLoss(nn.Module):
     def __init__(self, mode="SmoothL1"):
@@ -38,5 +35,4 @@ class GradGuideLoss(nn.Module):
             t_grad = self.gradient_module(target)
         x_grad = self.gradient_module(x) 
 
-        loss = self.criterion(x_grad, t_grad)
-        return loss   
+        return self.criterion(x_grad, t_grad)   

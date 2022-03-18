@@ -52,13 +52,14 @@ class Recorder(object):
         return logger
 
     def _checkFileExtension(self, file_name):
-        for k in self.code_file_extension:
-            if k in file_name:
-                for kk in self.ignore_file_extension:
-                    if kk in file_name:
-                        return False
-                return True
-        return False
+        return next(
+            (
+                all(kk not in file_name for kk in self.ignore_file_extension)
+                for k in self.code_file_extension
+                if k in file_name
+            ),
+            False,
+        )
 
     def _copyFiles(self, root_path, target_path):
         file_list = os.listdir(root_path)
@@ -67,12 +68,11 @@ class Recorder(object):
             if os.path.isdir(file_path) and "log_" not in file_path:
                 dst_path = os.path.join(target_path, file_path)
                 self._copyFiles(file_path, dst_path)
-            else:
-                if self._checkFileExtension(file_name):
-                    if not os.path.isdir(target_path):
-                        os.makedirs(target_path)
-                    dst_file = os.path.join(target_path, file_name)
-                    shutil.copyfile(file_path, dst_file)
+            elif self._checkFileExtension(file_name):
+                if not os.path.isdir(target_path):
+                    os.makedirs(target_path)
+                dst_file = os.path.join(target_path, file_name)
+                shutil.copyfile(file_path, dst_file)
                 
     def _saveConfig(self):
         # copy code files

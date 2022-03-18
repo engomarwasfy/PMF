@@ -77,19 +77,30 @@ class AugmentParams(object):
 
     def __str__(self):
         print("=== Augmentor parameters ===")
-        print("p_flipx: {}, p_flipy: {}".format(self.p_flipx, self.p_flipy))
-        print("p_transx: {}, p_transxmin: {}, p_transxmax: {}".format(
-            self.p_transx, self.trans_xmin, self.trans_xmax))
-        print("p_transy: {}, p_transymin: {}, p_transymax: {}".format(
-            self.p_transy, self.trans_ymin, self.trans_ymax))
-        print("p_transz: {}, p_transzmin: {}, p_transzmax: {}".format(
-            self.p_transz, self.trans_zmin, self.trans_zmax))
-        print("p_rotroll: {}, rot_rollmin: {}, rot_rollmax: {}".format(
-            self.p_rot_roll, self.rot_rollmin, self.rot_rollmax))
-        print("p_rotpitch: {}, rot_pitchmin: {}, rot_pitchmax: {}".format(
-            self.p_rot_pitch, self.rot_pitchmin, self.rot_pitchmax))
-        print("p_rotyaw: {}, rot_yawmin: {}, rot_yawmax: {}".format(
-            self.p_rot_yaw, self.rot_yawmin, self.rot_yawmax))
+        print(f"p_flipx: {self.p_flipx}, p_flipy: {self.p_flipy}")
+        print(
+            f"p_transx: {self.p_transx}, p_transxmin: {self.trans_xmin}, p_transxmax: {self.trans_xmax}"
+        )
+
+        print(
+            f"p_transy: {self.p_transy}, p_transymin: {self.trans_ymin}, p_transymax: {self.trans_ymax}"
+        )
+
+        print(
+            f"p_transz: {self.p_transz}, p_transzmin: {self.trans_zmin}, p_transzmax: {self.trans_zmax}"
+        )
+
+        print(
+            f"p_rotroll: {self.p_rot_roll}, rot_rollmin: {self.rot_rollmin}, rot_rollmax: {self.rot_rollmax}"
+        )
+
+        print(
+            f"p_rotpitch: {self.p_rot_pitch}, rot_pitchmin: {self.rot_pitchmin}, rot_pitchmax: {self.rot_pitchmax}"
+        )
+
+        print(
+            f"p_rotyaw: {self.p_rot_yaw}, rot_yawmin: {self.rot_yawmin}, rot_yawmax: {self.rot_yawmax}"
+        )
 
 
 class Augmentor(object):

@@ -11,15 +11,19 @@ class FocalSoftmaxLoss(nn.Module):
         self.n_classes = n_classes
 
         if isinstance(alpha, list):
-            assert len(alpha) == n_classes, "len(alpha)!=n_classes: {} vs. {}".format(
-                len(alpha), n_classes)
+            assert (
+                len(alpha) == n_classes
+            ), f"len(alpha)!=n_classes: {len(alpha)} vs. {n_classes}"
+
             self.alpha = torch.Tensor(alpha)
         elif isinstance(alpha, np.ndarray):
-            assert alpha.shape[0] == n_classes, "len(alpha)!=n_classes: {} vs. {}".format(
-                len(alpha), n_classes)
+            assert (
+                alpha.shape[0] == n_classes
+            ), f"len(alpha)!=n_classes: {len(alpha)} vs. {n_classes}"
+
             self.alpha = torch.from_numpy(alpha)
         else:
-            assert alpha < 1 and alpha > 0, "invalid alpha: {}".format(alpha)
+            assert alpha < 1 and alpha > 0, f"invalid alpha: {alpha}"
             self.alpha = torch.zeros(n_classes)
             self.alpha[0] = alpha
             self.alpha[1:] += (1-alpha)
@@ -44,23 +48,19 @@ class FocalSoftmaxLoss(nn.Module):
 
         target = target.view(-1, 1)
 
-        if self.softmax:
-            pred_softmax = F.softmax(pred, 1)
-        else:
-            pred_softmax = pred
+        pred_softmax = F.softmax(pred, 1) if self.softmax else pred
         pred_softmax = pred_softmax.gather(1, target).view(-1)
         pred_logsoft = pred_softmax.clamp(1e-6).log()
         self.alpha = self.alpha.to(x.device)
         alpha = self.alpha.gather(0, target.squeeze())
         loss = - (1-pred_softmax).pow(self.gamma)
         loss = loss * pred_logsoft * alpha
-        if mask is not None:
-            if len(mask.size()) > 1:
-                mask = mask.view(-1)
-            loss = (loss * mask).sum() / mask.sum()
-            return loss
-        else:
+        if mask is None:
             return loss.mean()
+        if len(mask.size()) > 1:
+            mask = mask.view(-1)
+        loss = (loss * mask).sum() / mask.sum()
+        return loss
 
 
 if __name__ == "__main__":

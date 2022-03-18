@@ -10,24 +10,20 @@ class SensatUrban(object):
         self.split = split
         self.keep_idx = keep_idx
         self.img_h = img_h
-        self.img_w = img_w 
+        self.img_w = img_w
         self.use_crop = use_crop
 
         if self.split not in ["train", "test", "val"]:
-            raise ValueError("invalid split: {}".format(self.split))
-        self.split_folder = os.path.join(self.root_path, self.split) 
-        self.data_split = []
-        for file_name in os.listdir(self.split_folder):
-            if ".pth" in file_name and "cambridge_block_1" not in file_name:
-                # skip cambridge_block_1 (tiny block) to avoid error
-                self.data_split.append(file_name)
-                # if split == "train":
-                # break
+            raise ValueError(f"invalid split: {self.split}")
+        self.split_folder = os.path.join(self.root_path, self.split)
+        self.data_split = [
+            file_name
+            for file_name in os.listdir(self.split_folder)
+            if ".pth" in file_name and "cambridge_block_1" not in file_name
+        ]
 
         self.all_data_frame = self.loadDataCache()
-        print("Using {} data frame from {} split".format(
-            len(self.all_data_frame), self.split
-        ))
+        print(f"Using {len(self.all_data_frame)} data frame from {self.split} split")
 
         self.mapped_cls_name = {
             -1: "ignore", 
@@ -46,29 +42,26 @@ class SensatUrban(object):
             if not self.keep_idx:
                 data_frame["h_idx"] = None
                 data_frame["w_idx"] = None
-            
+
             if self.use_crop:
                 h = data_frame["feature_map"].shape[1]
                 w = data_frame["feature_map"].shape[2]
                 rows = math.ceil(h/ self.img_h)
                 cols = math.ceil(w / self.img_w)
                 for r in range(rows):
-                    h_start = r * self.img_h 
+                    h_start = r * self.img_h
                     h_end = (r + 1) * self.img_h
                     if h_end > h:
                         h_end = h
-                        h_start = h - self.img_h 
-                        if h_start < 0:
-                            h_start = 0
-                    
+                        h_start = h - self.img_h
+                        h_start = max(h_start, 0)
                     for c in range(cols):
                         w_start = c * self.img_w
                         w_end = (c + 1) * self.img_w
                         if w_end > w:
                             w_end = w
-                            w_start = w - self.img_w 
-                            if w_start < 0:
-                                w_start = 0
+                            w_start = w - self.img_w
+                            w_start = max(w_start, 0)
                         new_feature_map = np.zeros((8, self.img_h, self.img_w))
                         new_feature_map[:, :h_end-h_start, :w_end-w_start] = data_frame["feature_map"][:, h_start:h_end, w_start:w_end]
                         new_label_map = np.zeros((self.img_h, self.img_w))
@@ -86,12 +79,10 @@ class SensatUrban(object):
 
     def readLabelByIndex(self, index):
         label_path = os.path.join(self.split_folder, self.data_split[index].replace(".pth", ".bin"))
-        label = np.fromfile(label_path, dtype=np.uint8)
-        return label 
+        return np.fromfile(label_path, dtype=np.uint8) 
     
     def readFileNameByIndex(self, index):
-        label_path = self.data_split[index].replace(".pth", ".bin")
-        return label_path
+        return self.data_split[index].replace(".pth", ".bin")
 
     def readDataByIndex(self, index):
         return self.all_data_frame[index]

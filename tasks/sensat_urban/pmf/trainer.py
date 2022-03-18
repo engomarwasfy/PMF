@@ -92,31 +92,27 @@ class Trainer(object):
             nesterov=True,
             momentum=self.settings.momentum,
             weight_decay=self.settings.weight_decay)
-        optimizer = [adam_opt, sgd_opt]
-
-        return optimizer
+        return [adam_opt, sgd_opt]
 
     def _initDataloader(self):
-        if self.settings.dataset == "SensatUrban":
-            trainset = pc_processor.dataset.SensatUrban(
-                root_path=self.settings.data_root,
-                split="train",
-                keep_idx=False
-            )
-            self.ignore_class = [0]
-            
-            self.mapped_cls_name = trainset.mapped_cls_name
+        if self.settings.dataset != "SensatUrban":
+            raise ValueError(f"invalid dataset: {self.settings.dataset}")
 
-            valset = pc_processor.dataset.SensatUrban(
-                root_path=self.settings.data_root,
-                split="val",
-                keep_idx=False,
-                use_crop=True,
-            )
-        else:
-            raise ValueError(
-                "invalid dataset: {}".format(self.settings.dataset))
-        
+        trainset = pc_processor.dataset.SensatUrban(
+            root_path=self.settings.data_root,
+            split="train",
+            keep_idx=False
+        )
+        self.ignore_class = [0]
+
+        self.mapped_cls_name = trainset.mapped_cls_name
+
+        valset = pc_processor.dataset.SensatUrban(
+            root_path=self.settings.data_root,
+            split="val",
+            keep_idx=False,
+            use_crop=True,
+        )
         trainset_loader = pc_processor.dataset.SensatLoader(
             dataset=trainset,
             img_h=self.settings.img_h, img_w=self.settings.img_w,
@@ -144,7 +140,7 @@ class Trainer(object):
                 drop_last=False,
                 sampler=val_sampler
             )
-            
+
 
             return train_loader, val_loader, train_sampler, val_sampler
 
@@ -166,9 +162,7 @@ class Trainer(object):
             return train_loader, val_loader, None, None
 
     def _initCriterion(self):
-        criterion = {}
-        criterion["lovasz"] = pc_processor.loss.Lovasz_softmax(ignore=0)
-
+        criterion = {"lovasz": pc_processor.loss.Lovasz_softmax(ignore=0)}
         criterion["kl_loss"] = nn.KLDivLoss(reduction="none")
 
         if self.settings.dataset == "SensatUrban":
@@ -181,10 +175,10 @@ class Trainer(object):
         alpha[13] = 2.5
 
         if self.recorder is not None:
-            self.recorder.logger.info("focal_loss alpha: {}".format(alpha))
+            self.recorder.logger.info(f"focal_loss alpha: {alpha}")
         criterion["focal_loss"] = pc_processor.loss.FocalSoftmaxLoss(
             self.settings.nclasses, gamma=2, alpha=alpha, softmax=False)
-       
+
         criterion["dice_loss"] = pc_processor.loss.ExpLogDiceLoss()
 
         # set device

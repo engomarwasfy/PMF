@@ -58,11 +58,7 @@ class KNN(nn.Module):
             something REALLY smart to handle unaligned number of points in memory
         '''
         # get device
-        if proj_range.is_cuda:
-            device = torch.device("cuda")
-        else:
-            device = torch.device("cpu")
-
+        device = torch.device("cuda") if proj_range.is_cuda else torch.device("cpu")
         # sizes of projection scan
         H, W = proj_range.shape
 

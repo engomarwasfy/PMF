@@ -33,33 +33,28 @@ class Inference(object):
         if self.knn_flag:
             self.recorder.logger.info("using KNN Post Process")
 
-        if self.settings.has_label:
-            self.data_split = "val"
-        else:
-            self.data_split = "test"
+        self.data_split = "val" if self.settings.has_label else "test"
 
     def _initDataloader(self):
-        if self.settings.dataset == "NuScenes":
-            if self.settings.has_label:
-                version = "v1.0-trainval"
-                split="val"
-            else:
-                version = "v1.0-test"     
-                split = "test"
+        if self.settings.dataset != "NuScenes":
+            raise ValueError(f"invalid dataset: {self.settings.dataset}")
 
-            valset = pc_processor.dataset.nuScenes.Nuscenes(
-                root=self.settings.data_root, version=version, split=split, has_image=False,
-            )
-            val_salsa_loader = pc_processor.dataset.SalsaNextLoader(
-                dataset=valset,
-                config=self.settings.config,
-                data_len=self.settings.data_len,
-                is_train=False,
-                return_uproj=True)
+        if self.settings.has_label:
+            version = "v1.0-trainval"
+            split="val"
         else:
-            raise ValueError(
-                "invalid dataset: {}".format(self.settings.dataset))
-        
+            version = "v1.0-test"     
+            split = "test"
+
+        valset = pc_processor.dataset.nuScenes.Nuscenes(
+            root=self.settings.data_root, version=version, split=split, has_image=False,
+        )
+        val_salsa_loader = pc_processor.dataset.SalsaNextLoader(
+            dataset=valset,
+            config=self.settings.config,
+            data_len=self.settings.data_len,
+            is_train=False,
+            return_uproj=True)
         val_loader = torch.utils.data.DataLoader(
             val_salsa_loader,
             batch_size=1,

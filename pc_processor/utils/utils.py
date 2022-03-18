@@ -11,9 +11,7 @@ def is_dist_avail_and_initialized():
 
 
 def get_rank():
-    if not is_dist_avail_and_initialized():
-        return 0
-    return dist.get_rank()
+    return dist.get_rank() if is_dist_avail_and_initialized() else 0
 
 def is_main_process():
     return get_rank() == 0
@@ -26,16 +24,14 @@ def init_distributed_mode(args):
     elif "SLURM_PROCID" in os.environ:
         args.rank = int(os.environ["SLURM_PROCID"])
         args.gpu = args.rank % torch.cuda.device_count()
-    elif hasattr(args, "rank"):
-        pass
-    else:
+    elif not hasattr(args, "rank"):
         print("Not using distributed mode")
         args.distributed = False
         return
 
     args.distributed = True
     args.dist_backend = "nccl"
-    print("| distributed init (rank {}): {}".format(args.rank, args.dist_url), flush=True)
+    print(f"| distributed init (rank {args.rank}): {args.dist_url}", flush=True)
     torch.distributed.init_process_group(
         backend=args.dist_backend,
         init_method=args.dist_url,

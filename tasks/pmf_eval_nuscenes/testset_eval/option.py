@@ -29,20 +29,25 @@ class Option(object):
         # ---- check params
         self.save_path = os.path.join(self.config["save_path"], self.experiment_id)
         if not os.path.isdir(self.main_pred_folder):
-            raise FileNotFoundError("main prediction folder not found: {}".format(self.main_pred_folder))
+            raise FileNotFoundError(
+                f"main prediction folder not found: {self.main_pred_folder}"
+            )
+
         if not os.path.isdir(self.sub_pred_folder):
-            raise FileNotFoundError("sub prediction folder not found: {}".format(self.sub_pred_folder))
+            raise FileNotFoundError(
+                f"sub prediction folder not found: {self.sub_pred_folder}"
+            )
 
     def check_path(self): 
         if pc_processor.utils.is_main_process():
             if os.path.exists(self.save_path):
                 # shutil.rmtree(self.save_path)
-                print("file exist: {}".format(self.save_path))
+                print(f"file exist: {self.save_path}")
                 action = input("Select Action: d(delete) / q(quit): ").lower().strip()
                 if action == "d":
                     shutil.rmtree(self.save_path)
                 else:
-                    raise OSError("Directory exits: {}".format(self.save_path))
-        
+                    raise OSError(f"Directory exits: {self.save_path}")
+
             if not os.path.isdir(self.save_path):
                 os.makedirs(self.save_path)

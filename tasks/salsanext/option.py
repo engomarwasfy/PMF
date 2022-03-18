@@ -59,19 +59,20 @@ class Option(object):
 
         batch_size = self.batch_size * self.n_gpus
         # --------------------------------
-        self.save_path = os.path.join(self.save_path, "log_{}_{}_bs{}_ep{}_lr{}_{}".format(
-            self.dataset, self.net_type, batch_size, self.n_epochs, self.lr, self.experiment_id
-        ))
+        self.save_path = os.path.join(
+            self.save_path,
+            f"log_{self.dataset}_{self.net_type}_bs{batch_size}_ep{self.n_epochs}_lr{self.lr}_{self.experiment_id}",
+        )
 
     def check_path(self):
         if pc_processor.utils.is_main_process():
             if os.path.exists(self.save_path):
-                print("file exist: {}".format(self.save_path))
+                print(f"file exist: {self.save_path}")
                 action = input("Select Action: d(delete) / q(quit): ").lower().strip()
                 if action == "d":
                     shutil.rmtree(self.save_path)
                 else:
-                    raise OSError("Directory exits: {}".format(self.save_path))
+                    raise OSError(f"Directory exits: {self.save_path}")
 
             if not os.path.isdir(self.save_path):
                 os.makedirs(self.save_path)

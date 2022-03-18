@@ -133,12 +133,11 @@ class PerspectiveViewLoader(Dataset):
         if self.return_uproj:
             return proj_tensor[:8], proj_tensor[8], proj_tensor[9], torch.from_numpy(x_data), torch.from_numpy(
                 y_data), torch.from_numpy(depth)
-        else:
-            # tensor augmentation
-            proj_tensor = self.aug_ops(proj_tensor)
-            if self.use_padding:
-                proj_tensor = self.pad(proj_tensor)
-            return proj_tensor[:8], proj_tensor[8], proj_tensor[9]
+        # tensor augmentation
+        proj_tensor = self.aug_ops(proj_tensor)
+        if self.use_padding:
+            proj_tensor = self.pad(proj_tensor)
+        return proj_tensor[:8], proj_tensor[8], proj_tensor[9]
 
     def __len__(self):
         if self.data_len > 0 and self.data_len < len(self.dataset):

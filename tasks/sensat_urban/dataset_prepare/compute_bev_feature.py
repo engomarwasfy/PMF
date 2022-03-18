@@ -12,17 +12,15 @@ class SenSatPreProcess(object):
         self.grid_size = grid_size
         self.split = split
         if self.split not in ["train", "val", "test"]:
-            raise ValueError("invalid split: {}".format(self.split))
-        if self.split == "test":
-            self.has_label = False
-        else:
-            self.has_label = True
-
+            raise ValueError(f"invalid split: {self.split}")
+        self.has_label = self.split != "test"
         self.data_split_folder = os.path.join(self.root_path, self.split)
-        self.data_split = []
-        for file_name in os.listdir(self.data_split_folder):
-            if ".ply" in file_name:
-                self.data_split.append(file_name)
+        self.data_split = [
+            file_name
+            for file_name in os.listdir(self.data_split_folder)
+            if ".ply" in file_name
+        ]
+
         self.save_path = save_path
 
 
@@ -94,7 +92,7 @@ class SenSatPreProcess(object):
                 data["red"], data["green"], data["blue"], pointcloud_label)).T # shape = (n, 7)
             result_dict = self._compute_feature(pointcloud)
             torch.save(result_dict, os.path.join(self.root_path, self.split, file_name.replace(".ply", ".pth")))
-            print("[{}] cost time: {}".format(i, time.time() - t_start))
+            print(f"[{i}] cost time: {time.time() - t_start}")
 
 if __name__ == "__main__":
     data_root = "/path/to/your/sensat-urban/"

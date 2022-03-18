@@ -9,7 +9,7 @@ class SensatLoader(Dataset):
     def __init__(self, dataset, img_h=800, img_w=800, n_samples_split=200):
         self.dataset = dataset
         self.img_h = img_h
-        self.img_w = img_w 
+        self.img_w = img_w
         # self.downscale = downscale
 
         self.split = dataset.split
@@ -40,7 +40,7 @@ class SensatLoader(Dataset):
             self.aug_pos = None
             self.total_samples = len(self.dataset)
             self.is_train = False
-        print("Generate {} samples from {} split".format(self.total_samples, self.split))
+        print(f"Generate {self.total_samples} samples from {self.split} split")
 
     def __getitem__(self, index):
         # FEATURE: max_h, min_h, mean_h, density, nonzero_mask, mean_r, mean_g, mean_b
@@ -55,12 +55,12 @@ class SensatLoader(Dataset):
             data_frame = self.dataset.readDataByIndex(index)
 
         feature_map = torch.from_numpy(data_frame["feature_map"]).float()
-        
+
 
         label_map = torch.from_numpy(data_frame["label_map"]).float()
 
         all_map = torch.cat((feature_map, label_map.unsqueeze(0)), dim=0)
-        
+
         if self.is_train:
             valid_percent = 0
             while valid_percent < 0.1:
@@ -68,8 +68,8 @@ class SensatLoader(Dataset):
                 valid_percent = tmp_map[8].ge(0).sum().float() / tmp_map[8].numel()
             all_map = tmp_map
             all_map[5:8] = (all_map[5:8]+random.uniform(-0.2, 0.2)) * all_map[4:5]
-            all_map[0:3] = (all_map[0:3]+random.uniform(-2, 2)) * all_map[4:5]
-        
+            all_map[0:3] = (all_map[:3] + random.uniform(-2, 2)) * all_map[4:5]
+
         return all_map[:8], all_map[8]
         
 

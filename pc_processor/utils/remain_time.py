@@ -21,15 +21,15 @@ class RemainTime(object):
 
         remain_time = 0
         mode_idx = list(self.timer_avg.keys()).index(mode)
-        count = 0
-        for k, v in self.timer_avg.items():
+        for count, (k, v) in enumerate(self.timer_avg.items()):
             if k == mode:
                 remain_iter = (self.n_epochs - epoch) * self.total_iter[k] - iters
             else:
-                if count < mode_idx:
-                    remain_iter = (self.n_epochs - epoch - 1) * self.total_iter[k]
-                else:
-                    remain_iter = (self.n_epochs - epoch) * self.total_iter[k]
-            count += 1
+                remain_iter = (
+                    (self.n_epochs - epoch - 1) * self.total_iter[k]
+                    if count < mode_idx
+                    else (self.n_epochs - epoch) * self.total_iter[k]
+                )
+
             remain_time += v.avg * remain_iter
         return remain_time

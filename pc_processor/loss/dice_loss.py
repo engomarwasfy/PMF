@@ -51,8 +51,7 @@ class ExpLogDiceLoss(nn.Module):
 
     def forward(self, x, target, mask=None):
         dc_loss = self.dc(x, target, mask)
-        explog_loss = torch.pow(-dc_loss.clamp(min=1e-6).log(), self.gamma)
-        return explog_loss
+        return torch.pow(-dc_loss.clamp(min=1e-6).log(), self.gamma)
 
 # if __name__ == "__main__":
 #     test_x = torch.rand((3, 4, 4, 4))

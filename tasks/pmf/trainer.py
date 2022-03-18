@@ -93,9 +93,7 @@ class Trainer(object):
             nesterov=True,
             momentum=self.settings.momentum,
             weight_decay=self.settings.weight_decay)
-        optimizer = [adam_opt, sgd_opt]
-
-        return optimizer
+        return [adam_opt, sgd_opt]
 
     def _initDataloader(self):
         if self.settings.dataset == "SemanticKitti":
@@ -113,7 +111,7 @@ class Trainer(object):
                 if self.cls_weight[cl] < 1e-10:
                     self.ignore_class.append(cl)
             if self.recorder is not None:
-                self.recorder.logger.info("weight: {}".format(self.cls_weight))
+                self.recorder.logger.info(f"weight: {self.cls_weight}")
             self.mapped_cls_name = trainset.mapped_cls_name
 
             valset = pc_processor.dataset.semantic_kitti.SemanticKitti(
@@ -133,8 +131,7 @@ class Trainer(object):
             self.ignore_class = [0]
             self.mapped_cls_name = trainset.mapped_cls_name
         else:
-            raise ValueError(
-                "invalid dataset: {}".format(self.settings.dataset))
+            raise ValueError(f"invalid dataset: {self.settings.dataset}")
 
         train_pv_loader = pc_processor.dataset.PerspectiveViewLoader(
             dataset=trainset,
@@ -186,11 +183,9 @@ class Trainer(object):
             return train_loader, val_loader, None, None
 
     def _initCriterion(self):
-        criterion = {}
-        criterion["lovasz"] = pc_processor.loss.Lovasz_softmax(ignore=0)
-
+        criterion = {"lovasz": pc_processor.loss.Lovasz_softmax(ignore=0)}
         criterion["kl_loss"] = nn.KLDivLoss(reduction="none")
-        
+
         if self.settings.dataset == "SemanticKitti":
             alpha = np.log(1+self.cls_weight)
             alpha = alpha / alpha.max()
@@ -198,10 +193,10 @@ class Trainer(object):
             alpha = np.ones((self.settings.nclasses))
         alpha[0] = 0
         if self.recorder is not None:
-            self.recorder.logger.info("focal_loss alpha: {}".format(alpha))
+            self.recorder.logger.info(f"focal_loss alpha: {alpha}")
         criterion["focal_loss"] = pc_processor.loss.FocalSoftmaxLoss(
             self.settings.nclasses, gamma=2, alpha=alpha, softmax=False)
-       
+
         # set device
         for _, v in criterion.items():
             v.cuda()
