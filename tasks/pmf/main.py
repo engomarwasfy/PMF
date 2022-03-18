@@ -50,8 +50,10 @@ class Experiment(object):
         assert self.settings.pretrained_model is None or self.settings.checkpoint is None, "cannot use pretrained weight and checkpoint at the same time"
         if self.settings.pretrained_model is not None:
             if not os.path.isfile(self.settings.pretrained_model):
-                raise FileNotFoundError("pretrained model not found: {}".format(
-                    self.settings.pretrained_model))
+                raise FileNotFoundError(
+                    f"pretrained model not found: {self.settings.pretrained_model}"
+                )
+
             state_dict = torch.load(
                 self.settings.pretrained_model, map_location="cpu")
             new_state_dict = self.model.state_dict()
@@ -67,12 +69,16 @@ class Experiment(object):
             # self.model.load_state_dict(state_dict)
             if self.recorder is not None:
                 self.recorder.logger.info(
-                    "loading pretrained weight from: {}".format(self.settings.pretrained_model))
+                    f"loading pretrained weight from: {self.settings.pretrained_model}"
+                )
+
 
         if self.settings.checkpoint is not None:
             if not os.path.isfile(self.settings.checkpoint):
                 raise FileNotFoundError(
-                    "checkpoint file not found: {}".format(self.settings.checkpoint))
+                    f"checkpoint file not found: {self.settings.checkpoint}"
+                )
+
             checkpoint_data = torch.load(
                 self.settings.checkpoint, map_location="cpu")
             self.model.load_state_dict(checkpoint_data["model"])
@@ -87,7 +93,7 @@ class Experiment(object):
         if self.settings.val_only:
             self.trainer.run(0, mode="Validation")
             return
-        
+
         best_val_result = None
         # self.epoch_start = 1
         # update lr after backward (required by pytorch)
@@ -106,10 +112,8 @@ class Experiment(object):
                         best_val_result = val_result
                     for k, v in val_result.items():
                         if v >= best_val_result[k]:
-                            self.recorder.logger.info(
-                                "get better {} model: {}".format(k, v))
-                            saved_path = os.path.join(
-                                self.recorder.checkpoint_path, "best_{}_model.pth".format(k))
+                            self.recorder.logger.info(f"get better {k} model: {v}")
+                            saved_path = os.path.join(self.recorder.checkpoint_path, f"best_{k}_model.pth")
                             best_val_result[k] = v
                             torch.save(self.model.state_dict(), saved_path)
 
@@ -129,12 +133,13 @@ class Experiment(object):
                 if best_val_result is not None:
                     log_str = ">>> Best Result: "
                     for k, v in best_val_result.items():
-                        log_str += "{}: {} ".format(k, v)
+                        log_str += f"{k}: {v} "
                     self.recorder.logger.info(log_str)
         cost_time = time.time() - t_start
         if self.recorder is not None:
-            self.recorder.logger.info("==== total cost time: {}".format(
-                datetime.timedelta(seconds=cost_time)))
+            self.recorder.logger.info(
+                f"==== total cost time: {datetime.timedelta(seconds=cost_time)}"
+            )
 
 
 if __name__ == "__main__":

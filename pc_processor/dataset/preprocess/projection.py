@@ -8,10 +8,14 @@ class RangeProjection(object):
     def __init__(self, fov_up, fov_down, proj_w, proj_h, fov_left=-180, fov_right=180):
 
         # check params
-        assert fov_up >= 0 and fov_down <= 0, "require fov_up >= 0 and fov_down <= 0, while fov_up/fov_down is {}/{}".format(
-            fov_up, fov_down)
-        assert fov_right >= 0 and fov_left <= 0, "require fov_right >= 0 and fov_left <= 0, while fov_right/fov_left is {}/{}".format(
-            fov_right, fov_left)
+        assert (
+            fov_up >= 0 and fov_down <= 0
+        ), f"require fov_up >= 0 and fov_down <= 0, while fov_up/fov_down is {fov_up}/{fov_down}"
+
+        assert (
+            fov_right >= 0 and fov_left <= 0
+        ), f"require fov_right >= 0 and fov_left <= 0, while fov_right/fov_left is {fov_right}/{fov_left}"
+
 
         # params of fov angeles
         self.fov_up = fov_up / 180.0 * np.pi

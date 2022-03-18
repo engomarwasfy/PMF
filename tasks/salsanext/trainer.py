@@ -55,10 +55,9 @@ class Trainer(object):
             max_steps=len(self.train_loader) * (self.settings.n_epochs - self.settings.warmup_epochs))
 
     def _initOptimizer(self):
-        optimizer = torch.optim.AdamW(
+        return torch.optim.AdamW(
             params=self.model.parameters(),
             lr=self.settings.lr)
-        return optimizer
 
     def _initDataloader(self):
         # add NuScenes dataloader
@@ -90,7 +89,7 @@ class Trainer(object):
                 if self.cls_weight[cl] < 1e-10:
                     self.ignore_class.append(cl)
             if self.recorder is not None:
-                self.recorder.logger.info("weight: {}".format(self.cls_weight))
+                self.recorder.logger.info(f"weight: {self.cls_weight}")
             self.mapped_cls_name = trainset.mapped_cls_name
 
             valset = pc_processor.dataset.semantic_kitti.SemanticKitti(
@@ -100,8 +99,7 @@ class Trainer(object):
             )
 
         else:
-            raise ValueError(
-                "invalid dataset: {}".format(self.settings.dataset))
+            raise ValueError(f"invalid dataset: {self.settings.dataset}")
 
         train_salsa_loader = pc_processor.dataset.SalsaNextLoader(
             dataset=trainset,
@@ -150,8 +148,7 @@ class Trainer(object):
             return train_loader, val_loader, None, None
 
     def _initCriterion(self):
-        criterion = {}
-        criterion["lovasz"] = pc_processor.loss.Lovasz_softmax(ignore=0)
+        criterion = {"lovasz": pc_processor.loss.Lovasz_softmax(ignore=0)}
         if self.settings.dataset == "SemanticKitti":
             alpha = np.log(1+self.cls_weight)
             alpha = alpha / alpha.max()
@@ -159,7 +156,7 @@ class Trainer(object):
             alpha = np.ones((self.settings.n_classes))
         alpha[0] = 0
         if self.recorder is not None:
-            self.recorder.logger.info("focal_loss alpha: {}".format(alpha))
+            self.recorder.logger.info(f"focal_loss alpha: {alpha}")
         criterion["focal_loss"] = pc_processor.loss.FocalSoftmaxLoss(
             self.settings.n_classes, gamma=2, alpha=alpha, softmax=False)
 
@@ -183,7 +180,7 @@ class Trainer(object):
             dataloader = self.val_loader
             self.model.eval()
         else:
-            raise ValueError("invalid mode: {}".format(mode))
+            raise ValueError(f"invalid mode: {mode}")
 
         # init metrics meter
         loss_meter = pc_processor.utils.AverageMeter()
@@ -218,7 +215,7 @@ class Trainer(object):
                         output, input_label, mask=input_mask)  
                     loss_lovasz = self.criterion["lovasz"](
                         output, input_label)
-                        
+
                     total_loss = loss_lovasz + loss_s
                     if self.settings.n_gpus > 1:
                         total_loss = total_loss.mean()
@@ -267,7 +264,7 @@ class Trainer(object):
                     mode, self.settings.n_epochs, epoch + 1, total_iter, i, data_cost_time, process_cost_time)
                 log_str += "LR {} Loss {:0.4f} Acc {:0.4f} IOU {:0.4F} ".format(
                     lr, loss.item(), mean_acc.item(), mean_iou.item())
-                log_str += "RT {}".format(remain_time)
+                log_str += f"RT {remain_time}"
                 self.recorder.logger.info(log_str)
             if mode == "Train":
                 self.scheduler.step()
@@ -277,20 +274,44 @@ class Trainer(object):
         # tensorboard logger
         if self.recorder is not None:
             self.recorder.tensorboard.add_scalar(
-                tag="{}_Loss".format(mode), scalar_value=loss_meter.avg, global_step=epoch)
-            self.recorder.tensorboard.add_scalar(
-                tag="{}_LossSoftmax".format(mode), scalar_value=loss_s.item(), global_step=epoch)
-            self.recorder.tensorboard.add_scalar(
-                tag="{}_LossLovasz".format(mode), scalar_value=loss_lovasz.item(), global_step=epoch)
+                tag=f"{mode}_Loss", scalar_value=loss_meter.avg, global_step=epoch
+            )
 
             self.recorder.tensorboard.add_scalar(
-                tag="{}_meanAcc".format(mode), scalar_value=mean_acc.item(), global_step=epoch)
+                tag=f"{mode}_LossSoftmax",
+                scalar_value=loss_s.item(),
+                global_step=epoch,
+            )
+
             self.recorder.tensorboard.add_scalar(
-                tag="{}_meanIOU".format(mode), scalar_value=mean_iou.item(), global_step=epoch)
+                tag=f"{mode}_LossLovasz",
+                scalar_value=loss_lovasz.item(),
+                global_step=epoch,
+            )
+
+
             self.recorder.tensorboard.add_scalar(
-                tag="{}_meanRecall".format(mode), scalar_value=mean_recall.item(), global_step=epoch)
+                tag=f"{mode}_meanAcc",
+                scalar_value=mean_acc.item(),
+                global_step=epoch,
+            )
+
             self.recorder.tensorboard.add_scalar(
-                tag="{}_lr".format(mode), scalar_value=lr, global_step=epoch)
+                tag=f"{mode}_meanIOU",
+                scalar_value=mean_iou.item(),
+                global_step=epoch,
+            )
+
+            self.recorder.tensorboard.add_scalar(
+                tag=f"{mode}_meanRecall",
+                scalar_value=mean_recall.item(),
+                global_step=epoch,
+            )
+
+            self.recorder.tensorboard.add_scalar(
+                tag=f"{mode}_lr", scalar_value=lr, global_step=epoch
+            )
+
 
             # -----------------
             for i, (_, v) in enumerate(self.mapped_cls_name.items()):
@@ -307,18 +328,19 @@ class Trainer(object):
                     "{}_Pred_cls_{:02d}".format(mode, i), output[0, i:i + 1].cpu(), epoch)
             for i in range(output.size(1)):
                 self.recorder.tensorboard.add_image("{}_Label_cls_{:02d}".format(
-                    mode, i), input_label[0:1].eq(i).cpu(), epoch)
+                    mode, i), input_label[:1].eq(i).cpu(), epoch)
             for i in range(input_feature.size(1)):
-                self.recorder.tensorboard.add_image("{}_Inputs_{}".format(mode, i), input_feature[0,i:i+1].cpu(), epoch)
+                self.recorder.tensorboard.add_image(
+                    f"{mode}_Inputs_{i}", input_feature[0, i : i + 1].cpu(), epoch
+                )
+
 
             log_str = ">>> {} Loss {:0.4f} Acc {:0.4f} IOU {:0.4F} Recall {:0.4f}".format(
                 mode, loss_meter.avg, mean_acc.item(), mean_iou.item(), mean_recall.item())
             self.recorder.logger.info(log_str)
 
-        result_metrics = {
+        return {
             "Acc": mean_acc.item(),
             "IOU": mean_iou.item(),
             "Recall": mean_recall.item()
         }
-
-        return result_metrics

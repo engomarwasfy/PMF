@@ -81,12 +81,12 @@ class Nuscenes(data.Dataset):
                  has_label=True):
 
         assert version in ['v1.0-trainval', 'v1.0-test', 'v1.0-mini']
-        if version == 'v1.0-trainval':
-            train_scenes = splits.train
+        if version == 'v1.0-mini':
+            train_scenes = splits.mini_train
         elif version == 'v1.0-test':
             train_scenes = splits.test
-        elif version == 'v1.0-mini':
-            train_scenes = splits.mini_train
+        elif version == 'v1.0-trainval':
+            train_scenes = splits.train
         else:
             raise NotImplementedError
         self.split = split
@@ -97,22 +97,29 @@ class Nuscenes(data.Dataset):
             version=version, dataroot=self.data_path, verbose=False)
         self.has_image = has_image
 
-        self.map_name_from_general_index_to_segmentation_index = {}
-        for index in self.nusc.lidarseg_idx2name_mapping:
-            self.map_name_from_general_index_to_segmentation_index[index] = \
-                map_name_from_segmentation_class_to_segmentation_index[
-                    map_name_from_general_to_segmentation_class[self.nusc.lidarseg_idx2name_mapping[index]]]
+        self.map_name_from_general_index_to_segmentation_index = {
+            index: map_name_from_segmentation_class_to_segmentation_index[
+                map_name_from_general_to_segmentation_class[
+                    self.nusc.lidarseg_idx2name_mapping[index]
+                ]
+            ]
+            for index in self.nusc.lidarseg_idx2name_mapping
+        }
 
-        self.mapped_cls_name = {}
-        for v, k in map_name_from_segmentation_class_to_segmentation_index.items():
-            self.mapped_cls_name[k] = v
+        self.mapped_cls_name = {
+            k: v
+            for v, k in map_name_from_segmentation_class_to_segmentation_index.items()
+        }
 
         available_scenes = get_available_scenes(self.nusc)
         available_scene_names = [s['name'] for s in available_scenes]
         train_scenes = list(
             filter(lambda x: x in available_scene_names, train_scenes))
-        train_scenes = set(
-            [available_scenes[available_scene_names.index(s)]['token'] for s in train_scenes])
+        train_scenes = {
+            available_scenes[available_scene_names.index(s)]['token']
+            for s in train_scenes
+        }
+
 
         if self.has_image:
             train_token_list, val_token_list = get_path_infos_cam_lidar(
@@ -121,14 +128,13 @@ class Nuscenes(data.Dataset):
             train_token_list, val_token_list = get_path_infos_only_lidar(
                 self.nusc, train_scenes)
 
-        if self.split == "train" or self.split == "test":
+        if self.split in ["train", "test"]:
             self.token_list = train_token_list
         elif self.split == "val":
             self.token_list = val_token_list
         else:
-            raise ValueError("invalid split mode: {}".format(self.split))
-        print("{}: {} sample: {}".format(
-            version, self.split, len(self.token_list)))
+            raise ValueError(f"invalid split mode: {self.split}")
+        print(f"{version}: {self.split} sample: {len(self.token_list)}")
 
     def __len__(self):
         'Denotes the total number of samples'
@@ -145,13 +151,12 @@ class Nuscenes(data.Dataset):
 
         if self.split == 'test':
             self.lidarseg_path = None
-            annotated_data = None
+            return None
         else:
             lidarseg_path = os.path.join(self.data_path,
                                          self.nusc.get('lidarseg', lidar_sample_token)['filename'])
-            annotated_data = np.fromfile(
-                lidarseg_path, dtype=np.uint8).reshape((-1, 1))  # label
-        return annotated_data
+            return np.fromfile(
+                lidarseg_path, dtype=np.uint8).reshape((-1, 1))
 
     def loadDataByIndex(self, index):
         if self.has_image:
@@ -188,8 +193,7 @@ class Nuscenes(data.Dataset):
     def loadImage(self, index):
         cam_sample_token = self.token_list[index]['cam_token']
         cam = self.nusc.get('sample_data', cam_sample_token)
-        image = Image.open(os.path.join(self.nusc.dataroot, cam['filename']))
-        return image
+        return Image.open(os.path.join(self.nusc.dataroot, cam['filename']))
 
     def getColorMap(self):
         '''
@@ -197,9 +201,8 @@ class Nuscenes(data.Dataset):
         :return: A numpy array which has length equal to the number of points in the pointcloud, and each value is
              a RGBA array.
         '''
-        colors = colormap_to_colors(
-            self.nusc.colormap, self.nusc.lidarseg_name2idx_mapping)  # Shape: [num_class, 3]
-        return colors
+        return colormap_to_colors(
+            self.nusc.colormap, self.nusc.lidarseg_name2idx_mapping)
 
     def mapLidar2Camera(self,
                         index,
@@ -297,10 +300,7 @@ def get_available_scenes(nusc):
             lidar_path, _, _ = nusc.get_sample_data(sd_rec['token'])
             if not Path(lidar_path).exists():
                 scene_not_exist = True
-                break
-            else:
-                break
-
+            break
         if scene_not_exist:
             continue
         available_scenes.append(scene)
@@ -331,15 +331,12 @@ def get_path_infos_cam_lidar(nusc, train_scenes):
         scene_token = sample['scene_token']
         lidar_token = sample['data']['LIDAR_TOP']  # 360°的lidar
 
-        if scene_token in train_scenes:
-            for i in ['CAM_FRONT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT', 'CAM_BACK', 'CAM_BACK_LEFT', 'CAM_FRONT_LEFT']:
-                a = {'lidar_token': lidar_token,
-                     'cam_token': sample['data'][i]}
+        for i in ['CAM_FRONT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT', 'CAM_BACK', 'CAM_BACK_LEFT', 'CAM_FRONT_LEFT']:
+            a = {'lidar_token': lidar_token,
+                 'cam_token': sample['data'][i]}
+            if scene_token in train_scenes:
                 train_lidar_token_list.append(a)
-        else:
-            for i in ['CAM_FRONT', 'CAM_FRONT_RIGHT', 'CAM_BACK_RIGHT', 'CAM_BACK', 'CAM_BACK_LEFT', 'CAM_FRONT_LEFT']:
-                a = {'lidar_token': lidar_token,
-                     'cam_token': sample['data'][i]}
+            else:
                 val_lidar_token_list.append(a)
     # print(len(train_lidar_token_list), len(val_lidar_token_list))
     return train_lidar_token_list, val_lidar_token_list

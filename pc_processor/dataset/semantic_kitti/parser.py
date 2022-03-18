@@ -11,16 +11,16 @@ class SemanticKittiPrediction(object):
         self.sequences.sort()  # sort seq id
 
         if os.path.isdir(self.root):
-            print("Dataset found: {}".format(self.root))
+            print(f"Dataset found: {self.root}")
         else:
-            raise ValueError("dataset not found: {}".format(self.root))
+            raise ValueError(f"dataset not found: {self.root}")
 
         self.label_files = []
 
         for seq in self.sequences:
             # format seq id
             seq = "{0:02d}".format(int(seq))
-            print("parsing seq {}...".format(seq))
+            print(f"parsing seq {seq}...")
 
             label_path = os.path.join(self.root, seq, "predictions")
             label_files = [os.path.join(label_path, f)
@@ -29,8 +29,9 @@ class SemanticKittiPrediction(object):
             self.label_files.extend(label_files)
 
         self.label_files.sort()
-        print("Using {} pointclouds predictions from sequences {}".format(
-            len(self.label_files), self.sequences))
+        print(
+            f"Using {len(self.label_files)} pointclouds predictions from sequences {self.sequences}"
+        )
 
     def loadLabelByIndex(self, index):
         sem_label, inst_label = self.readLabel(self.label_files[index])
@@ -65,12 +66,12 @@ class SemanticKitti(object):
         if os.path.isfile(config_path):
             self.data_config = yaml.safe_load(open(config_path, "r"))
         else:
-            raise ValueError("config file not found: {}".format(config_path))
+            raise ValueError(f"config file not found: {config_path}")
 
         if os.path.isdir(self.root):
-            print("Dataset found: {}".format(self.root))
+            print(f"Dataset found: {self.root}")
         else:
-            raise ValueError("dataset not found: {}".format(self.root))
+            raise ValueError(f"dataset not found: {self.root}")
 
         self.pointcloud_files = []
         self.label_files = []
@@ -80,7 +81,7 @@ class SemanticKitti(object):
         for seq in self.sequences:
             # format seq id
             seq = "{0:02d}".format(int(seq))
-            print("parsing seq {}...".format(seq))
+            print(f"parsing seq {seq}...")
 
             # get file list from path
             pointcloud_path = os.path.join(self.root, seq, "velodyne")
@@ -122,8 +123,10 @@ class SemanticKitti(object):
             self.label_files.sort()
         if self.has_image:
             self.image_files.sort()
-        print("Using {} pointclouds from sequences {}".format(
-            len(self.pointcloud_files), self.sequences))
+        print(
+            f"Using {len(self.pointcloud_files)} pointclouds from sequences {self.sequences}"
+        )
+
 
         # load config -------------------------------------
         # get color map
@@ -195,17 +198,14 @@ class SemanticKitti(object):
                 calib_all[key] = np.array([float(x) for x in value.split()])
 
         # reshape matrices
-        calib_out = {}
-        # 3x4 projection matrix for left camera
-        calib_out['P2'] = calib_all['P2'].reshape(3, 4)
+        calib_out = {'P2': calib_all['P2'].reshape(3, 4)}
         calib_out['Tr'] = np.identity(4)  # 4x4 matrix
         calib_out['Tr'][:3, :4] = calib_all['Tr'].reshape(3, 4)
         return calib_out
 
     @staticmethod
     def readPCD(path):
-        pcd = np.fromfile(path, dtype=np.float32).reshape(-1, 4)
-        return pcd
+        return np.fromfile(path, dtype=np.float32).reshape(-1, 4)
 
     @staticmethod
     def readLabel(path):
@@ -217,11 +217,7 @@ class SemanticKitti(object):
     def parsePathInfoByIndex(self, index):
         path = self.pointcloud_files[index]
         # linux path
-        if "\\" in path:
-            # windows path
-            path_split = path.split("\\")
-        else:
-            path_split = path.split("/")
+        path_split = path.split("\\") if "\\" in path else path.split("/")
         seq_id = path_split[-3]
         frame_id = path_split[-1].split(".")[0]
         return seq_id, frame_id
@@ -288,12 +284,12 @@ class SemanticKittiRGB(SemanticKitti):
         if os.path.isfile(config_path):
             self.data_config = yaml.safe_load(open(config_path, "r"))
         else:
-            raise ValueError("config file not found: {}".format(config_path))
+            raise ValueError(f"config file not found: {config_path}")
 
         if os.path.isdir(self.root):
-            print("Dataset found: {}".format(self.root))
+            print(f"Dataset found: {self.root}")
         else:
-            raise ValueError("dataset not found: {}".format(self.root))
+            raise ValueError(f"dataset not found: {self.root}")
 
         self.pointcloud_files = []
         self.label_files = []
@@ -303,7 +299,7 @@ class SemanticKittiRGB(SemanticKitti):
         for seq in self.sequences:
             # format seq id
             seq = "{0:02d}".format(int(seq))
-            print("parsing SemanticKittiRGB seq {}...".format(seq))
+            print(f"parsing SemanticKittiRGB seq {seq}...")
 
             # get file list from path
             pointcloud_path = os.path.join(self.root, seq, "eight_channel_data")  # xyzidrgb
@@ -342,8 +338,10 @@ class SemanticKittiRGB(SemanticKitti):
             self.label_files.sort()
         if self.has_image:
             self.image_files.sort()
-        print("Using {} SemanticKittiRGB pointclouds from sequences {}".format(
-            len(self.pointcloud_files), self.sequences))
+        print(
+            f"Using {len(self.pointcloud_files)} SemanticKittiRGB pointclouds from sequences {self.sequences}"
+        )
+
 
         # load config -------------------------------------
         # get color map
@@ -402,5 +400,4 @@ class SemanticKittiRGB(SemanticKitti):
 
     @staticmethod
     def readPCD(path):
-        pcd = np.fromfile(path, dtype=np.float32).reshape(-1, 8)
-        return pcd
+        return np.fromfile(path, dtype=np.float32).reshape(-1, 8)

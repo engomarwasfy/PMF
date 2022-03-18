@@ -58,30 +58,24 @@ class Inference(object):
             n_classes=self.settings.n_classes, device=torch.device("cpu"), ignore=[0])
         if self.knn_flag:
             self.recorder.logger.info("using KNN Post Process")
-        if self.settings.has_label:
-            self.data_split = "val"
-        else:
-            self.data_split = "test"
+        self.data_split = "val" if self.settings.has_label else "test"
 
     def _initDataloader(self):
-        if self.settings.dataset == "nuScenes":
-            if self.settings.is_debug:
-                version = "v1.0-mini"
-                split = "val"
-            else:
-                if self.settings.has_label:
-                    version = "v1.0-trainval"
-                    split = "val"
-                else:
-                    version = "v1.0-test"   
-                    split = "test"   
-            valset = pc_processor.dataset.nuScenes.Nuscenes(
-                root=self.settings.data_root, version=version, split=split,
-            )
-        else:
-            raise ValueError(
-                "invalid dataset: {}".format(self.settings.dataset))
+        if self.settings.dataset != "nuScenes":
+            raise ValueError(f"invalid dataset: {self.settings.dataset}")
 
+        if self.settings.is_debug:
+            version = "v1.0-mini"
+            split = "val"
+        elif self.settings.has_label:
+            version = "v1.0-trainval"
+            split = "val"
+        else:
+            version = "v1.0-test"   
+            split = "test"
+        valset = pc_processor.dataset.nuScenes.Nuscenes(
+            root=self.settings.data_root, version=version, split=split,
+        )
         val_nus_loader = NusPerspectiveViewLoader(
             dataset=valset,
             config=self.settings.config)

@@ -16,7 +16,7 @@ class WarmupMultiStepLR(_LRScheduler):
         warmup_method="linear",
         last_epoch=-1,
     ):
-        if not list(milestones) == sorted(milestones):
+        if list(milestones) != sorted(milestones):
             raise ValueError(
                 "Milestones should be a list of" " increasing integers. Got {}",
                 milestones,
@@ -24,9 +24,9 @@ class WarmupMultiStepLR(_LRScheduler):
 
         if warmup_method not in ("constant", "linear"):
             raise ValueError(
-                "Only 'constant' or 'linear' warmup_method accepted"
-                "got {}".format(warmup_method)
+                f"Only 'constant' or 'linear' warmup_method acceptedgot {warmup_method}"
             )
+
         self.milestones = milestones
         self.gamma = gamma
         self.warmup_factor = warmup_factor

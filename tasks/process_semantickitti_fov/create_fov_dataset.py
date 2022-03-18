@@ -13,13 +13,13 @@ def createFovDataset(src_root, dst_root, seq):
         sequences=[seq],
         config_path="../../pc_processor/dataset/semantic_kitti/semantic-kitti.yaml"
     )
-    
+
     if not os.path.isdir(dst_root):
         os.makedirs(dst_root)
 
     data_len = len(dataset)
     for i in range(data_len):
-        print("processing {}|{} ...".format(data_len,i))
+        print(f"processing {data_len}|{i} ...")
         pointcloud, sem_label, inst_label = dataset.loadDataByIndex(i)
         image = dataset.loadImage(i)
 
@@ -27,7 +27,7 @@ def createFovDataset(src_root, dst_root, seq):
         seq_id, frame_id = dataset.parsePathInfoByIndex(i)
         mapped_pointcloud, keep_mask = dataset.mapLidar2Camera(
             seq_id, pointcloud[:, :3], image.shape[1], image.shape[0])
-        
+
         keep_pointcloud = pointcloud[keep_mask]
         keep_sem_label = sem_label[keep_mask].astype(np.int32)
         keep_inst_label = inst_label[keep_mask].astype(np.int32)
@@ -41,12 +41,12 @@ def createFovDataset(src_root, dst_root, seq):
         label_path = os.path.join(dst_root, seq_id,  "labels")
         if not os.path.isdir(label_path):
             os.makedirs(label_path)
-        
-        pointcloud_file = os.path.join(pointcloud_path, "{}.bin".format(frame_id))
-        label_file = os.path.join(label_path, "{}.label".format(frame_id))
+
+        pointcloud_file = os.path.join(pointcloud_path, f"{frame_id}.bin")
+        label_file = os.path.join(label_path, f"{frame_id}.label")
         keep_pointcloud.tofile(pointcloud_file)
         keep_label.tofile(label_file)
-    
+
     print("copy image_2 folder ...")
     # copy image and calib files
     src_img_folder = os.path.join(src_root, "{:02d}".format(seq), "image_2")
@@ -64,8 +64,9 @@ def createFovDataset(src_root, dst_root, seq):
 """
 extract fov data from semantic-kitti and construct data set semantic-kitti-fov
 """
+
 if __name__ == "__main__":
-    for seq in range(0, 11):
+    for seq in range(11):
         createFovDataset(
             src_root="/path/to/semantic-kitti/sequences", # path to the original semantic-kitti dataset
             dst_root="/path/to/semantic-kitti-fov/sequences", # path to the generated semantic-kitti-fov dataset

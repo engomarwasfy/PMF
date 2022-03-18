@@ -28,11 +28,7 @@ class Inference(object):
             n_classes=self.settings.nclasses, device=torch.device("cpu"), ignore=[0])
         self.pixel_eval = pc_processor.metrics.IOUEval(
             n_classes=self.settings.nclasses, device=torch.device("cpu"), ignore=[0])
-        if self.settings.has_label:
-            self.data_split = "val"
-        else:
-            self.data_split = "test"
-
+        self.data_split = "val" if self.settings.has_label else "test"
         self.use_knn = settings.config["post"]["KNN"]["use"]
         if self.use_knn:
             self.recorder.logger.info("use knn")
@@ -54,22 +50,16 @@ class Inference(object):
             ])
 
     def _initDataloader(self):
-        if self.settings.dataset == "SensatUrban":
-            if self.settings.has_label:
-                split = "val"
-            else:
-                split = "test"   
-            valset = pc_processor.dataset.SensatUrban(
+        if self.settings.dataset != "SensatUrban":
+            raise ValueError(f"invalid dataset: {self.settings.dataset}")
+
+        split = "val" if self.settings.has_label else "test"
+        return pc_processor.dataset.SensatUrban(
                 root_path=self.settings.data_root,
                 split=split,
                 keep_idx=True,
                 use_crop=False
             )
-        else:
-            raise ValueError(
-                "invalid dataset: {}".format(self.settings.dataset))
-
-        return valset
 
     def run(self):
         self.model.eval()

@@ -12,8 +12,8 @@ class MultiTaskLoss(nn.Module):
             self.sigma = torch.nn.Parameter(torch.ones(n_losses)/n_losses)
 
     def forward(self, losses):
-        total_loss = 0
-        for i, loss in enumerate(losses):
-            total_loss += loss / \
-                (2.0*self.sigma[i].pow(2)) + (self.sigma[i].pow(2)+1.0).log()
-        return total_loss
+        return sum(
+            loss / (2.0 * self.sigma[i].pow(2))
+            + (self.sigma[i].pow(2) + 1.0).log()
+            for i, loss in enumerate(losses)
+        )

@@ -23,11 +23,7 @@ class MergePred(object):
 
         self.evaluator = pc_processor.metrics.IOUEval(
             n_classes=self.settings.n_classes, device=torch.device("cpu"), ignore=[0])
-        if self.settings.has_label:
-            self.data_split = "val"
-        else:
-            self.data_split = "test"
-
+        self.data_split = "val" if self.settings.has_label else "test"
         self.submission_json = {
             "meta": {
                 "use_camera":  True,
@@ -39,25 +35,24 @@ class MergePred(object):
         }
 
     def _initDataloader(self):
-        if self.settings.dataset == "NuScenes":
-            if self.settings.is_debug:
-                version = "v1.0-mini"
-                split = "val"
-            else:
-                if self.settings.has_label:
-                    version = "v1.0-trainval"
-                    split = "val"
-                else:
-                    version = "v1.0-test"
-                    split = "test"
-            valset = pc_processor.dataset.nuScenes.Nuscenes(
-                root=self.settings.data_root, version=version, split=split, has_image=False,
-            )
-        else:
-            raise ValueError(
-                "invalid dataset: {}".format(self.settings.dataset))
+        if self.settings.dataset != "NuScenes":
+            raise ValueError(f"invalid dataset: {self.settings.dataset}")
 
-        return valset
+        if self.settings.is_debug:
+            version = "v1.0-mini"
+            split = "val"
+        elif self.settings.has_label:
+            version = "v1.0-trainval"
+            split = "val"
+        else:
+            version = "v1.0-test"
+            split = "test"
+        return pc_processor.dataset.nuScenes.Nuscenes(
+            root=self.settings.data_root,
+            version=version,
+            split=split,
+            has_image=False,
+        )
 
     def _mergeResult(self, main_pred, sub_pred):
         invalid_mask = main_pred == 0
@@ -79,13 +74,19 @@ class MergePred(object):
             lidar_token = self.nus_loader.token_list[i]
 
             # load main pred result
-            main_pred_file = os.path.join(self.settings.main_pred_folder,
-                                          "preds/lidarseg/{}/{}_lidarseg.bin".format(self.data_split, lidar_token))
+            main_pred_file = os.path.join(
+                self.settings.main_pred_folder,
+                f"preds/lidarseg/{self.data_split}/{lidar_token}_lidarseg.bin",
+            )
+
             main_pred = np.fromfile(main_pred_file, dtype=np.int32)
 
             # load sub pred result
-            sub_pred_file = os.path.join(self.settings.sub_pred_folder,
-                                         "preds/lidarseg/{}/{}_lidarseg.bin".format(self.data_split, lidar_token))
+            sub_pred_file = os.path.join(
+                self.settings.sub_pred_folder,
+                f"preds/lidarseg/{self.data_split}/{lidar_token}_lidarseg.bin",
+            )
+
             sub_pred = np.fromfile(sub_pred_file, dtype=np.int32)
 
             pred = self._mergeResult(main_pred, sub_pred)
@@ -103,8 +104,7 @@ class MergePred(object):
 
             if not os.path.isdir(pred_path):
                 os.makedirs(pred_path)
-            pred_result_path = os.path.join(
-                pred_path, "{}_lidarseg.bin".format(lidar_token))
+            pred_result_path = os.path.join(pred_path, f"{lidar_token}_lidarseg.bin")
             pred = pred.astype(np.uint8)
             pred.tofile(pred_result_path)
 
@@ -121,7 +121,7 @@ class MergePred(object):
 
             if self.settings.is_debug and i > 10:
                 break
-        
+
         submission_json_path = os.path.join(self.prediction_path, self.data_split)
         if not os.path.isdir(submission_json_path):
             os.makedirs(submission_json_path)
@@ -169,22 +169,26 @@ class MergePred(object):
         # compute fwIoU
         freqw = dist_data[1:] / dist_data[1:].sum()
         freq_iou = (cls_iou[1:] * freqw).sum()
-        self.recorder.logger.info("fwIoU: {}".format(freq_iou.item()))
+        self.recorder.logger.info(f"fwIoU: {freq_iou.item()}")
 
         self.recorder.logger.info("---- confusion matrix original data -----")
         self.recorder.logger.info(conf_matrix)
         # get acc matrics
         acc_data = conf_matrix.float() / (conf_matrix.sum(1, keepdim=True).float() + 1e-8)
         table_title = [" "]
-        for i in range(1, self.settings.n_classes):
-            table_title.append("{}".format(
-                self.nus_loader.mapped_cls_name[i]))
+        table_title.extend(
+            f"{self.nus_loader.mapped_cls_name[i]}"
+            for i in range(1, self.settings.n_classes)
+        )
+
         acc_table = PrettyTable(table_title)
         for i in range(1, self.settings.n_classes):
-            row_data = ["{}".format(
-                self.nus_loader.mapped_cls_name[i])]
-            for j in range(1, self.settings.n_classes):
-                row_data.append("{:0.1f}".format(acc_data[i, j]*100))
+            row_data = [f"{self.nus_loader.mapped_cls_name[i]}"]
+            row_data.extend(
+                "{:0.1f}".format(acc_data[i, j] * 100)
+                for j in range(1, self.settings.n_classes)
+            )
+
             acc_table.add_row(row_data)
         self.recorder.logger.info("---- ACC matrix ----------------")
         self.recorder.logger.info(acc_table)
@@ -192,15 +196,19 @@ class MergePred(object):
         # get recall matrics
         recall_data = conf_matrix.float() / (conf_matrix.sum(0, keepdim=True).float()+1e-8)
         table_title = [" "]
-        for i in range(1, self.settings.n_classes):
-            table_title.append("{}".format(
-                self.nus_loader.mapped_cls_name[i]))
+        table_title.extend(
+            f"{self.nus_loader.mapped_cls_name[i]}"
+            for i in range(1, self.settings.n_classes)
+        )
+
         recall_table = PrettyTable(table_title)
         for i in range(1, self.settings.n_classes):
-            row_data = ["{}".format(
-                self.nus_loader.mapped_cls_name[i])]
-            for j in range(1, self.settings.n_classes):
-                row_data.append("{:0.1f}".format(recall_data[i, j]*100))
+            row_data = [f"{self.nus_loader.mapped_cls_name[i]}"]
+            row_data.extend(
+                "{:0.1f}".format(recall_data[i, j] * 100)
+                for j in range(1, self.settings.n_classes)
+            )
+
             recall_table.add_row(row_data)
         self.recorder.logger.info("---- Recall matrix ----------------")
         self.recorder.logger.info(recall_table)
@@ -224,8 +232,9 @@ class Experiment(object):
         t_start = time.time()
         self.merge_pred.run()
         cost_time = time.time() - t_start
-        self.recorder.logger.info("==== total cost time: {}".format(
-            datetime.timedelta(seconds=cost_time)))
+        self.recorder.logger.info(
+            f"==== total cost time: {datetime.timedelta(seconds=cost_time)}"
+        )
 
 
 if __name__ == "__main__":

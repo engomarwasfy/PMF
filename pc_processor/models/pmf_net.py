@@ -32,8 +32,7 @@ class ResidualBasedFusionBlock(nn.Module):
         cat_feature = torch.cat((pcd_feature, img_feature), dim=1)
         fuse_out = self.fuse_conv(cat_feature)
         attention_map = self.attention(fuse_out)
-        out = fuse_out*attention_map + pcd_feature
-        return out
+        return fuse_out*attention_map + pcd_feature
 
 
 
@@ -59,8 +58,8 @@ class ResNet(nn.Module):
             net = resnet152(pretrained)
             self.expansion = 4
         else:
-            raise NotImplementedError("invalid backbone: {}".format(backbone))
-        
+            raise NotImplementedError(f"invalid backbone: {backbone}")
+
         self.feature_channels = [64 * self.expansion, 128 * self.expansion, 256 * self.expansion, 512 * self.expansion]
         self.backbone_name = backbone
 
@@ -85,7 +84,7 @@ class ResNet(nn.Module):
         h, w = x.shape[2], x.shape[3]
         # check input size
         if h % 16 != 0 or w % 16 != 0:
-            assert False, "invalid input size: {}".format(x.shape)
+            assert False, f"invalid input size: {x.shape}"
 
         # ----------------------------------------------------------------------------- #
         # Encoder
@@ -132,10 +131,9 @@ class ASPP(nn.Module):
 
         atrous_block18 = self.atrous_block18(x)
 
-        net = self.conv_1x1_output(torch.cat([
+        return self.conv_1x1_output(torch.cat([
             image_features, atrous_block1, atrous_block6,
             atrous_block12, atrous_block18], dim=1))
-        return net
 
 
 class SalsaNextFusion(SalsaNext):

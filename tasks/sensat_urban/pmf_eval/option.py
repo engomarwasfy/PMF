@@ -53,22 +53,22 @@ class Option(object):
         # ---- check params
         # --------------------------------
         if not os.path.isdir(self.save_path):
-            raise ValueError("training path not exists: {}".format(self.save_path))
-        
-        self.save_path = os.path.join(self.save_path, "Eval-PMFNet_{}_{}".format(
-            self.dataset, self.experiment_id
-        ))
+            raise ValueError(f"training path not exists: {self.save_path}")
+
+        self.save_path = os.path.join(
+            self.save_path, f"Eval-PMFNet_{self.dataset}_{self.experiment_id}"
+        )
 
     def check_path(self): 
         if pc_processor.utils.is_main_process():
             if os.path.exists(self.save_path):
                 # shutil.rmtree(self.save_path)
-                print("file exist: {}".format(self.save_path))
+                print(f"file exist: {self.save_path}")
                 action = input("Select Action: d(delete) / q(quit): ").lower().strip()
                 if action == "d":
                     shutil.rmtree(self.save_path)
                 else:
-                    raise OSError("Directory exits: {}".format(self.save_path))
-        
+                    raise OSError(f"Directory exits: {self.save_path}")
+
             if not os.path.isdir(self.save_path):
                 os.makedirs(self.save_path)

@@ -51,25 +51,26 @@ class Option(object):
 
         # --------------------------------
         if not os.path.isdir(self.save_path):
-            raise ValueError("training path not exists: {}".format(self.save_path))
-        
+            raise ValueError(f"training path not exists: {self.save_path}")
+
         if self.config["post"]["KNN"]["use"]:
-            knn_str = "KNN-{}".format(self.config["post"]["KNN"]["params"]["search"])
+            knn_str = f'KNN-{self.config["post"]["KNN"]["params"]["search"]}'
         else:
             knn_str = ""
-        self.save_path = os.path.join(self.save_path, "Eval-SV_{}_{}_{}_{}".format(
-            self.dataset, self.net_type, knn_str, self.experiment_id
-        ))
+        self.save_path = os.path.join(
+            self.save_path,
+            f"Eval-SV_{self.dataset}_{self.net_type}_{knn_str}_{self.experiment_id}",
+        )
 
     def check_path(self): 
         if pc_processor.utils.is_main_process():
             if os.path.exists(self.save_path):
-                print("file exist: {}".format(self.save_path))
+                print(f"file exist: {self.save_path}")
                 action = input("Select Action: d(delete) / q(quit): ").lower().strip()
                 if action == "d":
                     shutil.rmtree(self.save_path)
                 else:
-                    raise OSError("Directory exits: {}".format(self.save_path))
-        
+                    raise OSError(f"Directory exits: {self.save_path}")
+
             if not os.path.isdir(self.save_path):
                 os.makedirs(self.save_path)

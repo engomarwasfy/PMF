@@ -13,12 +13,11 @@ class WeightedSmoothL1Loss(nn.Module):
         loss = torch.where(cond, 0.5 * diff.pow(2)/beta, diff - 0.5*beta)
         if weight is not None:
             loss = loss * weight
-        if mask is not None:
-            mask = mask.expand_as(loss)
-            loss = loss * mask
-            return loss.sum() / mask.sum()
-        else:
+        if mask is None:
             return loss.mean()
+        mask = mask.expand_as(loss)
+        loss = loss * mask
+        return loss.sum() / mask.sum()
 
 # if __name__ == "__main__":
 #     criterion = WeightedSmoothL1Loss(sigma=10)
